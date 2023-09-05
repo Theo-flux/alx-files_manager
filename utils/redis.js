@@ -11,7 +11,7 @@ class RedisClient {
   }
 
   isAlive() {
-    return true;
+    return this.client.connected;
   }
 
   async get(key) {
@@ -51,5 +51,5 @@ class RedisClient {
   }
 }
 
-// eslint-disable-next-line import/prefer-default-export
-export const redisClient = new RedisClient();
+const redisClient = new RedisClient();
+module.exports = redisClient;
