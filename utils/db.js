@@ -54,11 +54,21 @@ class DBClient {
       });
 
       if (result.insertedCount === 1) {
-        return {
-          id: result.insertedId,
-          email,
-        };
+        return result.insertedId;
       }
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async getUser(email, password) {
+    if (!this.isAlive()) return 0;
+    const usersCollection = this.client.db().collection('users');
+
+    try {
+      // Check if the email exists
+      const existingUser = await usersCollection.findOne({ email, password });
+      return existingUser;
     } catch (error) {
       throw new Error(error.message);
     }

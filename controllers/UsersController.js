@@ -19,12 +19,14 @@ class UsersController {
     try {
       const data = await dbClient.registerUser(email, password);
       response.status(200);
-      response.json(data);
+      response.json({ id: data, email });
     } catch (error) {
       response.status(400);
       response.json({ error: error.message });
     }
   }
+
+  static getMe(request, response) {}
 }
 
 module.exports = UsersController;
