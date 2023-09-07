@@ -60,6 +60,7 @@ class AuthController {
     try {
       await redisClient.del(key);
       response.status(204);
+      response.json({ });
       return;
     } catch (error) {
       response.status(401);
