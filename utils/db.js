@@ -1,6 +1,7 @@
 /* eslint-disable consistent-return */
 import sha1 from 'sha1';
 import MongoClient from 'mongodb/lib/mongo_client';
+import { ObjectId } from 'mongodb';
 
 class DBClient {
   constructor() {
@@ -71,6 +72,23 @@ class DBClient {
       return existingUser;
     } catch (error) {
       throw new Error(error.message);
+    }
+  }
+
+  async getUserById(_id) {
+    if (!this.isAlive()) return 0;
+    const usersCollection = this.client.db().collection('users');
+
+    try {
+      const user = await usersCollection.findOne({ _id: ObjectId(_id) });
+      if (user) {
+        return { id: user._id, email: user.email };
+      }
+      throw new Error('Unauthorized');
+    } catch (error) {
+      // Handle any errors that occur during the database operation
+      console.error(error);
+      throw error;
     }
   }
 }

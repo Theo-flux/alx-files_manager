@@ -22,7 +22,8 @@ class AuthController {
       const user = await dbClient.getUser(email, sha1(password));
 
       if (!user) {
-        response.status(401).json({ error: 'Unauthorized' });
+        response.status(401);
+        response.json({ error: 'Unauthorized' });
         return;
       }
 
@@ -31,19 +32,40 @@ class AuthController {
       const key = `auth_${token}`;
 
       // store the token in redis
-      await redisClient.set(key, token, 24 * 60 * 60);
+      const res = await redisClient.set(key, user._id, 24 * 60 * 60);
       // console.log(user, key);
 
-      const val = await redisClient.get(key);
-      response.status(200).json({ token: val });
+      if (res) {
+        response.status(200);
+        response.json({ token });
+        return;
+      }
     } catch (err) {
-      console.log(err);
+      response.status(404);
+      response.json({ error: err.message });
     }
-
-    // console.log(email, password);
   }
 
-  static getDisconnect(request, response) {}
+  static async getDisconnect(request, response) {
+    const token = request.headers['x-token'];
+    const key = `auth_${token}`;
+    const res = await redisClient.get(key);
+
+    if (!res) {
+      response.status(401);
+      response.json({ error: 'Unauthorized' });
+      return;
+    }
+
+    try {
+      await redisClient.del(key);
+      response.status(204);
+      return;
+    } catch (error) {
+      response.status(401);
+      response.json({ error: error.message });
+    }
+  }
 }
 
 module.exports = AuthController;

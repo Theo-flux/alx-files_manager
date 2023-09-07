@@ -1,4 +1,5 @@
 import dbClient from '../utils/db';
+import redisClent from '../utils/redis';
 
 class UsersController {
   static async postNew(request, response) {
@@ -26,7 +27,31 @@ class UsersController {
     }
   }
 
-  static getMe(request, response) {}
+  static async getMe(request, response) {
+    const token = request.headers['x-token'];
+    if (!token) {
+      response.status(404);
+      response.json({ error: 'Token missing in header' });
+      return;
+    }
+
+    const res = await redisClent.get(`auth_${token}`);
+
+    if (!res) {
+      response.status(404);
+      response.json({ error: 'Unauthorized' });
+      return;
+    }
+
+    try {
+      const user = await dbClient.getUserById(res);
+      response.status(200);
+      response.json(user);
+    } catch (err) {
+      response.status(404);
+      response.json({ error: err.message });
+    }
+  }
 }
 
 module.exports = UsersController;
