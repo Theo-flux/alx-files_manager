@@ -1,5 +1,5 @@
 import dbClient from '../utils/db';
-import redisClent from '../utils/redis';
+import redisClient from '../utils/redis';
 
 class UsersController {
   static async postNew(request, response) {
@@ -19,7 +19,7 @@ class UsersController {
 
     try {
       const data = await dbClient.registerUser(email, password);
-      response.status(200);
+      response.status(201);
       response.json({ id: data, email });
     } catch (error) {
       response.status(400);
@@ -35,7 +35,7 @@ class UsersController {
       return;
     }
 
-    const res = await redisClent.get(`auth_${token}`);
+    const res = await redisClient.get(`auth_${token}`);
 
     if (!res) {
       response.status(404);
