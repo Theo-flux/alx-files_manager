@@ -30,7 +30,7 @@ class UsersController {
   static async getMe(request, response) {
     const token = request.headers['x-token'];
     if (!token) {
-      response.status(4041);
+      response.status(401);
       response.json({ error: 'Unauthorized' });
       return;
     }
