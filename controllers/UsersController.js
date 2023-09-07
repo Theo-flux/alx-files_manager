@@ -38,7 +38,7 @@ class UsersController {
     const res = await redisClient.get(`auth_${token}`);
 
     if (!res) {
-      response.status(404);
+      response.status(401);
       response.json({ error: 'Unauthorized' });
       return;
     }
@@ -48,7 +48,7 @@ class UsersController {
       response.status(200);
       response.json(user);
     } catch (err) {
-      response.status(404);
+      response.status(401);
       response.json({ error: err.message });
     }
   }
