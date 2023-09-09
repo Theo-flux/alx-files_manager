@@ -1,4 +1,6 @@
 /* eslint-disable object-curly-newline */
+import { v4 as uuid4 } from 'uuid';
+import fs from 'fs/promises';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
@@ -19,38 +21,105 @@ class FilesController {
       return;
     }
 
+    let user = { id: '', email: '' };
+
     try {
-      const user = await dbClient.getUserById(res);
-      response.status(200);
-      response.json(user);
+      user = await dbClient.getUserById(res);
     } catch (err) {
       response.status(404);
       response.json({ error: err.message });
     }
 
+    const acceptedTypes = ['file', 'folder', 'image'];
     const { name, type, data, isPublic, parentId } = request.body;
-    console.log(name, type, data, isPublic, parentId);
+
+    let myIsPublic = isPublic;
+    let myParentId = parentId;
+
     if (!name) {
       response.status(400);
-      response.json({ error: 'Missinf name' });
+      response.json({ error: 'Missing name' });
       return;
     }
 
-    if (!type) {
+    if (!type || !acceptedTypes.includes(type)) {
       response.status(400);
-      response.json({ error: 'Missinf type' });
+      response.json({ error: 'Missing type' });
       return;
     }
 
-    if (!data || data !== 'file') {
+    if (!data && type !== 'folder') {
       response.status(400);
-      response.json({ error: 'Missinf type' });
+      response.json({ error: 'Missing data' });
       return;
     }
 
-    if (parentId) {
-      // if no file is present in DB for this parentId, return an error Parent not found with a status code 400
-      // If the file present in DB for this parentId is not of type folder, return an error Parent is not a folder with a status code 400
+    if (myParentId) {
+      try {
+        await dbClient.getFileByParentId(myParentId, user.id);
+      } catch (error) {
+        response.status(400);
+        response.json({ error: error.message });
+        return;
+      }
+    } else {
+      myParentId = 0;
+    }
+
+    if (!myIsPublic) {
+      myIsPublic = false;
+    }
+
+    if (type === 'folder') {
+      try {
+        const res = await dbClient.createFolder(
+          user.id,
+          name,
+          type,
+          myIsPublic,
+          myParentId,
+        );
+        response.status(201);
+        response.json(res);
+        return;
+      } catch (error) {
+        response.status(400);
+        response.json({ error: error.message });
+      }
+    } else {
+      // store in a folder path
+
+      // get folder path env variable
+      const relativePath = process.env.FOLDER_PATH || '/tmp/files_manager';
+      const localPath = `${relativePath}/${uuid4()}`;
+      const binaryData = Buffer.from(data, 'base64');
+
+      try {
+        try {
+          await fs.mkdir(relativePath);
+        } catch (error) {
+          console.log(error.message);
+        }
+        await fs.writeFile(localPath, binaryData, 'utf-8');
+      } catch (error) {
+        console.log(error);
+      }
+
+      try {
+        const res = await dbClient.createFileOrImage(
+          user.id,
+          name,
+          type,
+          myIsPublic,
+          myParentId,
+          localPath,
+        );
+        response.status(201);
+        response.json(res);
+      } catch (error) {
+        response.status(400);
+        response.json({ error: error.message });
+      }
     }
   }
 }

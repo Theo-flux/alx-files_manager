@@ -19,6 +19,6 @@ app.get('/connect', router);
 app.get('/disconnect', router);
 
 // files route
-// app.post('/files', router);
+app.post('/files', router);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
