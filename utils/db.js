@@ -101,13 +101,14 @@ class DBClient {
 
     try {
       const file = await filesCollection.findOne({
-        _id: new ObjectId(parentId),
-        userId,
+        _id: parentId === 0 ? parentId : new ObjectId(parentId),
+        userId: ObjectId(userId),
       });
       if (file) {
-        console.log(file);
         if (file.type !== 'folder') {
           throw new Error('Parent is not a folder');
+        } else {
+          return file;
         }
       } else {
         throw new Error('Parent not found');
@@ -126,7 +127,7 @@ class DBClient {
       name,
       type,
       isPublic,
-      parentId,
+      parentId: parentId === 0 ? parentId : new ObjectId(parentId),
     };
 
     try {
@@ -142,23 +143,16 @@ class DBClient {
     }
   }
 
-  async createFileOrImage(
-    userId,
-    name,
-    type,
-    isPublic,
-    parentId,
-    localPath,
-  ) {
+  async createFileOrImage(userId, name, type, isPublic, parentId, localPath) {
     if (!this.isAlive()) return 0;
     const filesCollection = this.client.db().collection(this.FILES);
 
     const query = {
-      userId,
+      userId: new ObjectId(userId),
       name,
       type,
       isPublic,
-      parentId: new ObjectId(parentId),
+      parentId: parentId === 0 ? parentId : new ObjectId(parentId),
       localPath,
     };
 
@@ -170,6 +164,51 @@ class DBClient {
           ...query,
         };
       }
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async getFileByUserAndFileId(id, userId) {
+    if (!this.isAlive()) return 0;
+    const filesCollection = this.client.db().collection(this.FILES);
+
+    try {
+      const file = await filesCollection.find({
+        _id: new ObjectId(id),
+        userId: new ObjectId(userId),
+      });
+      if (file) {
+        return file;
+      }
+      throw new Error('Not found');
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async getFileByPaginatedParentId(userId, parentId, page, pageSize) {
+    if (!this.isAlive()) return 0;
+    const filesCollection = this.client.db().collection(this.FILES);
+    console.log(parentId);
+    try {
+      const pipeline = [
+        {
+          $match: {
+            userId,
+            parentId: parentId === 0 ? parentId : new ObjectId(parentId),
+          },
+        },
+        {
+          $skip: page * pageSize,
+        },
+        {
+          $limit: pageSize,
+        },
+      ];
+      const file = await filesCollection.aggregate(pipeline).toArray();
+      console.log(file);
+      return file;
     } catch (error) {
       throw new Error(error.message);
     }

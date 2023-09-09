@@ -122,6 +122,79 @@ class FilesController {
       }
     }
   }
+
+  static async getShow(request, response) {
+    const { id } = request.params;
+    const token = request.headers['x-token'];
+
+    const res = await redisClient.get(`auth_${token}`);
+
+    if (!res) {
+      response.status(401);
+      response.json({ error: 'Unauthorized' });
+      return;
+    }
+
+    let user = { id: '', email: '' };
+
+    try {
+      user = await dbClient.getUserById(res);
+    } catch (error) {
+      response.status(400);
+      response.json({ error: error.message });
+      return;
+    }
+
+    try {
+      const file = dbClient.getFileByUserAndFileId(id, user.id);
+      response.status(200);
+      response.json(file);
+      return;
+    } catch (error) {
+      response.status(404);
+      response.json({ error: error.message });
+    }
+  }
+
+  static async getIndex(request, response) {
+    const token = request.headers['x-token'];
+
+    const res = await redisClient.get(`auth_${token}`);
+
+    if (!res) {
+      response.status(401);
+      response.json({ error: 'Unauthorized' });
+      return;
+    }
+
+    let user = { id: '', email: '' };
+
+    try {
+      user = await dbClient.getUserById(res);
+    } catch (error) {
+      response.status(400);
+      response.json({ error: error.message });
+      return;
+    }
+
+    const parentId = request.query.parentId || 0;
+    const page = request.query.page || 0;
+    const pageSize = 20;
+
+    try {
+      const file = await dbClient.getFileByPaginatedParentId(
+        user.id,
+        parentId,
+        page,
+        pageSize,
+      );
+      response.status(200);
+      response.json(file);
+    } catch (error) {
+      response.status(401);
+      response.json({ error: error.message });
+    }
+  }
 }
 
 module.exports = FilesController;
