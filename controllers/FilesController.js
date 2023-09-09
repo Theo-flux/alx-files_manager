@@ -72,7 +72,7 @@ class FilesController {
 
     if (type === 'folder') {
       try {
-        const res = await dbClient.createFile(
+        const res = await dbClient.createFolder(
           user.id,
           name,
           type,
@@ -106,12 +106,13 @@ class FilesController {
       }
 
       try {
-        const res = await dbClient.createFile(
+        const res = await dbClient.createFileOrImage(
           user.id,
           name,
           type,
           myIsPublic,
           myParentId,
+          localPath,
         );
         response.status(201);
         response.json(res);

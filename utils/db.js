@@ -117,7 +117,7 @@ class DBClient {
     }
   }
 
-  async createFile(userId, name, type, isPublic, parentId) {
+  async createFolder(userId, name, type, isPublic, parentId) {
     if (!this.isAlive()) return 0;
     const filesCollection = this.client.db().collection(this.FILES);
 
@@ -142,36 +142,38 @@ class DBClient {
     }
   }
 
-  // async createFileOrImage(
-  //   userId,
-  //   name,
-  //   type,
-  //   isPublic,
-  //   parentId,
-  // ) {
-  //   if (!this.isAlive()) return 0;
-  //   const filesCollection = this.client.db().collection(this.FILES);
+  async createFileOrImage(
+    userId,
+    name,
+    type,
+    isPublic,
+    parentId,
+    localPath,
+  ) {
+    if (!this.isAlive()) return 0;
+    const filesCollection = this.client.db().collection(this.FILES);
 
-  //   const query = {
-  //     userId,
-  //     name,
-  //     type,
-  //     isPublic,
-  //     parentId,
-  //   };
+    const query = {
+      userId,
+      name,
+      type,
+      isPublic,
+      parentId: new ObjectId(parentId),
+      localPath,
+    };
 
-  //   try {
-  //     const file = await filesCollection.insertOne(query);
+    try {
+      const file = await filesCollection.insertOne(query);
 
-  //     if (file.insertedCount === 1) {
-  //       return {
-  //         ...query,
-  //       };
-  //     }
-  //   } catch (error) {
-  //     throw new Error(error.message);
-  //   }
-  // }
+      if (file.insertedCount === 1) {
+        return {
+          ...query,
+        };
+      }
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
 }
 
 const dbClient = new DBClient();
