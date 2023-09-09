@@ -26,7 +26,7 @@ class FilesController {
     try {
       user = await dbClient.getUserById(res);
     } catch (err) {
-      response.status(404);
+      response.status(400);
       response.json({ error: err.message });
     }
 
